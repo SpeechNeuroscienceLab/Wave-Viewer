@@ -13,7 +13,7 @@ axkids = get(hax,'Children');
 n_axkids = length(axkids);
 for i=1:n_axkids
     if axkids(i)==h
-        ih=axkids(i);
+        ih=i;
         break;
     end
 end
