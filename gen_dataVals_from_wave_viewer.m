@@ -1,4 +1,4 @@
-function [] = gen_dataVals_from_wave_viewer(exptName,subdirname,snum,trialdir,excl)
+function [] = gen_dataVals_from_wave_viewer(trialdir,excl)
 %GEN_DATAVALS  Scrape subject trial files for data and save.
 %   GEN_DATAVALS(EXPTNAME,SUBDIRNAME,SNUM,TRIALDIR,EXCL) scrapes the files
 %   of a single subject (SNUM) from that subject's TRIALDIR directory and
@@ -6,26 +6,53 @@ function [] = gen_dataVals_from_wave_viewer(exptName,subdirname,snum,trialdir,ex
 %
 %CN 3/2010
 
-if nargin < 5, excl = []; end
-if nargin < 4 || isempty(trialdir), trialdir = 'trials'; end
+if nargin < 2, excl = []; end
+if nargin < 1 || isempty(trialdir), trialdir = 'trials'; end
 
-dataPath = getAcoustSubjPath(exptName,snum,subdirname);
-load(fullfile(dataPath,'expt.mat'));
-load(fullfile(dataPath,'wave_viewer_params.mat'));
-trialPath = fullfile(dataPath,trialdir); % e.g. trials; trials_default
+subjID=input('Enter participant ID number: ', 's');
+outputdir = '/home/houde/data/error_hist';
+  if ~exist(outputdir,'dir')
+     mkdir(outputdir)
+  end
+  expt.snum = subjID;
+  cd(fullfile(outputdir, expt.snum));
+
+load('expt.mat');
+load('wave_viewer_params.mat');
+trialPath = fullfile(outputdir,expt.snum,'trials'); % e.g. trials; trials_default
+cd('trials');
 W = what(trialPath);
 matFiles = [W.mat];
-
-% Strip off '.mat' and sort
-filenums = zeros(1,length(matFiles));
-for i = 1:length(matFiles)
-    [~, name] = fileparts(matFiles{i});
-    filenums(i) = str2double(name);
+goodfiles_index = 1;
+for i = 1: length(matFiles)
+    load(sprintf('%d',i));
+    if trialparams.event_params.is_good_trial == 1
+        goodfiles(1,goodfiles_index) = i;
+        goodfiles_index = goodfiles_index+1;
+    end
 end
-sortedfiles = sort(filenums);
+    
+savedir = fullfile(outputdir, expt.snum);
+save(fullfile(savedir, 'goodfiles'), 'goodfiles');
 
-% Toss out exclusions
-goodfiles = setdiff(sortedfiles,excl);
+% 
+% % Strip off '.mat' and sort
+% filenums = zeros(1,length(matFiles));
+% for i = 1:length(matFiles)
+%     curdir = cd;
+%     cd('trials');
+%     load(sprintf('%d',i));
+%     if trialparams.event_params.is_good_trial == 1
+%     [~, name] = fileparts(matFiles{i});
+%      
+%     filenums(i) = str2double(name);
+%     end
+%     cd(curdir);
+% end
+% sortedfiles = sort(filenums);
+
+
+
 
 % Append '.mat' and load
 dataVals = struct([]);
@@ -91,7 +118,7 @@ for i = 1:length(goodfiles)
     dataVals(i).ampl_taxis = sigmat.ampl_taxis(onsetIndfx:offsetIndfx)';
     dataVals(i).dur = offset_time - onset_time;
     dataVals(i).word = expt.allWords(i);
-    dataVals(i).vowel = expt.allVowels(i);
+%    dataVals(i).vowel = expt.allVowels(i);
     dataVals(i).cond = expt.allConds(i);
     dataVals(i).token = i;
     if exist('trialparams','var')
@@ -101,6 +128,6 @@ for i = 1:length(goodfiles)
     end
 end
 
-savefile = fullfile(dataPath,sprintf('dataVals%s.mat',trialdir(7:end)));
+savefile = fullfile(outputdir,expt.snum,sprintf('dataVals%s.mat',trialdir(7:end)));
 bSave = savecheck(savefile);
 if bSave, save(savefile, 'dataVals'); end
