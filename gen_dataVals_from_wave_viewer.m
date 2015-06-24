@@ -15,11 +15,13 @@ outputdir = '/home/houde/data/error_hist';
      mkdir(outputdir)
   end
   expt.snum = subjID;
-  cd(fullfile(outputdir, expt.snum));
+  case_number=input (' Case 1 or Case 2 ? : ','s');
+  expt.case = case_number;
+  cd(fullfile(outputdir, expt.snum, expt.case));
 
 load('expt.mat');
 load('wave_viewer_params.mat');
-trialPath = fullfile(outputdir,expt.snum,'trials'); % e.g. trials; trials_default
+trialPath = fullfile(outputdir,expt.snum,expt.case,'trials'); % e.g. trials; trials_default
 cd('trials');
 W = what(trialPath);
 matFiles = [W.mat];
@@ -29,11 +31,14 @@ for i = 1: length(matFiles)
     if trialparams.event_params.is_good_trial == 1
         goodfiles(1,goodfiles_index) = i;
         goodfiles_index = goodfiles_index+1;
+        savedir = fullfile(outputdir, expt.snum, expt.case);
+save(fullfile(savedir, 'goodfiles.mat'), 'goodfiles');
     end
+    
+    
 end
     
-savedir = fullfile(outputdir, expt.snum);
-save(fullfile(savedir, 'goodfiles'), 'goodfiles');
+
 
 % 
 % % Strip off '.mat' and sort
@@ -128,6 +133,6 @@ for i = 1:length(goodfiles)
     end
 end
 
-savefile = fullfile(outputdir,expt.snum,sprintf('dataVals%s.mat',trialdir(7:end)));
-bSave = savecheck(savefile);
-if bSave, save(savefile, 'dataVals'); end
+savefile = fullfile(outputdir,expt.snum,expt.case,sprintf('dataVals.mat'));
+
+save(savefile, 'dataVals'); end
