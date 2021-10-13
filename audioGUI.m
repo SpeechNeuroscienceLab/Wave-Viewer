@@ -42,7 +42,7 @@ wvpfile = fullfile(dataPath,'wave_viewer_params.mat');
 if (exist(wvpfile,'file') == 2)    
     wvp = load(wvpfile);
 end
-
+load('expt.mat');
 % loop through trials
 for itrial = trials2track
     %% prepare inputs
@@ -72,11 +72,11 @@ for itrial = trials2track
     
     % optionally overwrite figure position
     if ~isempty(figpos), plot_params.figpos = figpos; end
-    
+    disp(['Trial: ' num2str(itrial) '  Word: ' expt_record.allWords{itrial} '  Cond: ' num2str(expt_record.allConds(itrial))])
     %% call wave viewer
     endstate = wave_viewer(y,'fs',fs,'name',sprintf('trial(%d)',itrial), ...
         'nformants',2,'pitchlimits',pitchlimits,'sigproc_params',sigproc_params, ...
-        'plot_params',plot_params,'event_params',event_params);
+        'plot_params',plot_params);
     
     %% save outputs 
     trialparams.sigproc_params = endstate.sigproc_params;

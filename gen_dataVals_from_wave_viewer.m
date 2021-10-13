@@ -5,23 +5,16 @@ function [] = gen_dataVals_from_wave_viewer(trialdir,excl)
 %   collects formant data into a single mat file.
 %
 %CN 3/2010
+%KSK 10/2021
 
 if nargin < 2, excl = []; end
 if nargin < 1 || isempty(trialdir), trialdir = 'trials'; end
-
-subjID=input('Enter participant ID number: ', 's');
-outputdir = '/home/houde/data/error_hist';
-  if ~exist(outputdir,'dir')
-     mkdir(outputdir)
-  end
-  expt.snum = subjID;
-  case_number=input (' Case 1 or Case 2 ? : ','s');
-  expt.case = case_number;
-  cd(fullfile(outputdir, expt.snum, expt.case));
+savedir= uigetdir(pwd,'Choose directory that contians speak folder');
+cd(savedir);
 
 load('expt.mat');
 load('wave_viewer_params.mat');
-trialPath = fullfile(outputdir,expt.snum,expt.case,'trials'); % e.g. trials; trials_default
+trialPath = fullfile(savedir,'trials'); % e.g. trials; trials_default
 cd('trials');
 W = what(trialPath);
 matFiles = [W.mat];
@@ -31,11 +24,8 @@ for i = 1: length(matFiles)
     if trialparams.event_params.is_good_trial == 1
         goodfiles(1,goodfiles_index) = i;
         goodfiles_index = goodfiles_index+1;
-        savedir = fullfile(outputdir, expt.snum, expt.case);
-save(fullfile(savedir, 'goodfiles.mat'), 'goodfiles');
+        save(fullfile(savedir, 'goodfiles.mat'), 'goodfiles');
     end
-    
-    
 end
     
 
@@ -122,9 +112,9 @@ for i = 1:length(goodfiles)
     dataVals(i).ftrack_taxis = sigmat.ftrack_taxis(onsetIndfx:offsetIndfx)';
     dataVals(i).ampl_taxis = sigmat.ampl_taxis(onsetIndfx:offsetIndfx)';
     dataVals(i).dur = offset_time - onset_time;
-    dataVals(i).word = expt.allWords(i);
+    dataVals(i).word = expt_record.allWords(goodfiles(i));
 %    dataVals(i).vowel = expt.allVowels(i);
-    dataVals(i).cond = expt.allConds(i);
+    dataVals(i).cond = expt_record.allConds(goodfiles(i));
     dataVals(i).token = i;
     if exist('trialparams','var')
         dataVals(i).bExcl = ~trialparams.event_params.is_good_trial;
@@ -133,6 +123,6 @@ for i = 1:length(goodfiles)
     end
 end
 
-savefile = fullfile(outputdir,expt.snum,expt.case,sprintf('dataVals.mat'));
+savefile = fullfile(savedir,sprintf('dataVals.mat'));
 
 save(savefile, 'dataVals'); end

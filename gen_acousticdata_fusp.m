@@ -12,7 +12,7 @@ if nargin < 1 || isempty(dataPath), dataPath = pwd; end
 if nargin < 2 || isempty(nblocks)
     
     load('expt');
-    nblocks = expt.nblocks;
+    nblocks = expt_record.nblocks;
 end
 if nargin < 3 || isempty(savePath), savePath = dataPath; end
 
@@ -28,6 +28,7 @@ for nb=1:nblocks
     vechist_in(nb) = get_vec_hist6('inbuffer',3,nb); % 1-indexed blocks
     vechist_out(nb) = get_vec_hist6('outbuffer',3,nb); %#ok<*AGROW>
 end
+cd('..');
 if ~exist('expt','var'), exprparams = load('expt.mat'); end
 cd(currdir)
 

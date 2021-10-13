@@ -77,14 +77,17 @@ function viewer_end_state = wave_viewer(y,varargin)
                                  'yes_gray', 1, ...
                                  'thresh_gray', 0, ...
                                  'max_gray', 1, ...
-                                 'figpos',[850         726        1170         757]);
+                                 'figpos',[0        0        1170         757]);
   params.event_params   = struct('event_names', [], ...
                                  'event_times', [], ...
                                  'user_event_name_prefix','uev', ...
                                  'user_event_names', [], ...
                                  'user_event_times', [], ...
                                  'is_good_trial', 1);
-
+  event_params = params.event_params;
+  sigproc_params = params.sigproc_params;
+  plot_params = params.plot_params;
+  
   param_struct_names = fieldnames(params);
   n_param_structs = length(param_struct_names);
   [option_names,option_values] = make_option_specs(varargin{:});
@@ -141,7 +144,19 @@ function viewer_end_state = wave_viewer(y,varargin)
   if nargout >= 1, yes_start_blocking = 1; else, yes_start_blocking = 0; end
   if nargout >= 1, viewer_end_state.name = 'running'; end
   fprintf('yes_start_blocking(%d)\n',yes_start_blocking);
-  
+  plot_params.figpos = [200        200        1170         757];%this keeeps getting reset by line 138 so loading it here again KSK 06242021
+%   sigproc_params.nlpc = 11;
+%   sigproc_params.preemph = 1.7;
+  %   sigproc_params = params.sigproc_params = struct('fs', 11025, ...
+%                                  'ms_framespec_gram', 'broadband', ...
+%                                  'ms_framespec_form', 'narrowband', ...
+%                                  'nfft', 4096, ...
+%                                  'nlpc', 12, ...
+%                                  'nformants', 3, ...
+%                                  'preemph', 0.95, ...
+%                                  'pitchlimits', [50 300], ...
+%                                  'ampl_thresh4voicing', 0);
+                             
   hf = figure('Name',plot_params.name,'Position',plot_params.figpos);
   set(hf,'DeleteFcn',@delete_func);
   wave_ax = new_wave_ax(y,sigproc_params,plot_params,event_params);
@@ -183,8 +198,14 @@ function viewer_end_state = wave_viewer(y,varargin)
   h_button_calcFx = [];
   normal_bgcolor = [];
   alert4calcFx = 0;
+  play_from_wave_ax(wave_ax); % plays sound automatically for confirmation, KSK 06/24/21
+
   h_button_help = uicontrol('Style','pushbutton', 'String','HELP', 'FontWeight','bold', ...
                              'Position',[padL horiz_orig colwidth textbutt1line_height], 'HandleVisibility','off', 'Callback',@my_help_func); horiz_orig = horiz_orig + textbutt1line_height + padU;
+ 
+  ksk_auto_initial_widen(wave_ax,gram_ax,pitch_ax,ampl_ax,spec_ax);
+
+%   expand_btw_ax_tmarkers(wave_ax)
   function my_help_func(hObject,eventdata) % callback for h_button_help
     helpstr = sprintf(['keyboard shortcuts:\n', ...
                        '"v": if ampl_ax, set amplitude threshold for voicing (i.e., valid formants)\n', ...
@@ -731,6 +752,15 @@ function gram_ax = new_gram_ax(wave_ax,ampl_ax,sigproc_params,plot_params)
   thresh4voicing_spec.ampl_thresh4voicing = ampl_thresh4voicing;
   [axdat{2},params{2}] = make_ftrack_axdat(y,fs,params{1}.faxis,ms_framespec_form,nlpc,preemph,nformants,thresh4voicing_spec);
   
+%   t_min = (find(ampl_axinfo.dat{1}>3*10^8,1)-500)/11025;
+%   t_max = (find(ampl_axinfo.dat{1}>3*10^8,1,'last')+500)/11025;
+% 
+%   if t_min < params{1}.taxis(1)
+%       t_min = params{1}.taxis(1);
+%   end
+%   if t_max < params{1}.taxis(end)
+%       t_max = params{1}.taxis(end);
+%   end
   gram_ax = axes();
   axinfo = new_axinfo('gram',params{1}.taxis,params{1}.faxis,axdat,gram_ax,hzbounds4plot,wave_axinfo.name,params{1}.taxis(1),params{1}.taxis(end),params,wave_axinfo.event_params);
   set(gram_ax,'UserData',axinfo);
@@ -946,9 +976,7 @@ function axinfo = new_axinfo(axtype,taxis,faxis,axdat,hax,hzbounds4plot,name,t_m
   global tmarker_init_border
   global wave_viewer_logshim
   global formant_colors
-
   t_range = t_max - t_min;
-  
   axinfo.i = 0;
   axinfo.type = axtype;
   axinfo.name = name;
@@ -1649,6 +1677,31 @@ function widen_ax_view(ax)
   new_tlow = cur_tlow - 0.5*cur_trange;
   new_thi = cur_thi + 0.5*cur_trange;
   new_ax_tlims(ax,new_tlow,new_thi);
+end
+
+function ksk_auto_initial_widen(ax,gram_ax,pitch_ax,ampl_ax,spec_ax)
+  axinfo = get(ax,'UserData');
+  cur_tlims = get(axinfo.h,'XLim');
+  
+  wavsamp = sqrt(axinfo.dat{1}.^2);
+  t_low = (find(wavsamp>500,1) - 500)/11025;
+  t_hi = (find(wavsamp>1000,1,'last')+500)/11025;
+  if t_low < cur_tlims(1)
+    t_low = cur_tlims(1);
+  end
+  if t_hi > cur_tlims(2)
+    t_hi = cur_tlims(2);
+  end
+  t_spec = (t_hi-t_low)/6 + t_low;
+  update_ax_tmarkers(ax,t_low,t_spec,t_hi);
+  update_ax_tmarkers(gram_ax,t_low,t_spec,t_hi);
+  update_ax_tmarkers(pitch_ax,t_low,t_spec,t_hi);
+  update_ax_tmarkers(ampl_ax,t_low,t_spec,t_hi);
+  update_spec_ax(spec_ax,gram_ax);
+  expand_btw_ax_tmarkers(ax);
+  expand_btw_ax_tmarkers(gram_ax);
+  expand_btw_ax_tmarkers(pitch_ax);
+  expand_btw_ax_tmarkers(ampl_ax);
 end
 
 function new_ax_tlims(ax,new_tlow,new_thi)

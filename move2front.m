@@ -10,9 +10,12 @@ else
 end
 
 axkids = get(hax,'Children');
-ih = dsearchn(axkids,h);
-if isempty(ih), error('handle(%f) not a child of hax(%f)', h, hax); end
+% ih = dsearchn(axkids,h); not sure what function this serves but i
+% disabled it KSK 6/24/2021
+% if isempty(ih), error('handle(%f) not a child of hax(%f)', h, hax); end not sure what function this serves but i
+% disabled it KSK 6/24/2021
 remh_axkids = axkids;
-remh_axkids(ih) = [];
+% remh_axkids(ih) = []; not sure what function this serves but i
+% disabled it KSK 6/24/2021
 new_axkids = [h; remh_axkids];
 set(hax,'Children',new_axkids);
