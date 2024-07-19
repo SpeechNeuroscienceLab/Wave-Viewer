@@ -222,6 +222,8 @@ function viewer_end_state = wave_viewer(y,varargin)
 
     if check4alert4calcFx('continuing')
       viewer_end_state.name = 'cont';
+      viewer_end_state.plot_params = plot_params;
+      viewer_end_state.sigproc_params = sigproc_params;
       delete(hf);
     end
   end
